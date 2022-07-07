@@ -29,16 +29,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  get: ^4.6.5
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
   serial_comm:
-  #  path: ../../Dart/serial_comm
     git: https://github.com/mjosip72/dart_serial_comm.git
   
   bitsdojo_window: ^0.1.2
+
+  win_prefs:
+    git: https://github.com/mjosip72/win_prefs.git
 
 dev_dependencies:
   flutter_test:

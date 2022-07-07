@@ -1,153 +1,208 @@
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
-import 'package:serial_comm/serial_comm.dart';
-import 'qwidgets.dart';
-
-String? serialPortName;
+import 'package:serial_terminal/port_controller.dart';
 
 void main() {
+  runMyApp();
+}
 
-  app();
+const appTitle = 'Serial terminal';
+
+class ThemeColors {
+  static var background = const Color(0xFF1E1E1E);
+  static var background2 = const Color(0xFF333333);
+}
+
+void runMyApp() {
+
+  ThemeData theme = ThemeData(
+    brightness: Brightness.dark,
+    primarySwatch: Colors.green,
+    scaffoldBackgroundColor: ThemeColors.background2,
+  );
+
+  var myApp = GetMaterialApp(
+    debugShowCheckedModeBanner: false,
+    themeMode: ThemeMode.dark,
+    darkTheme: theme,
+    home: const SerialTerminal(),
+    title: appTitle,
+  );
+
+  runApp(myApp);
 
   doWhenWindowReady(() {
     appWindow.size = const Size(1280, 720);
     appWindow.alignment = Alignment.center;
     appWindow.show();
+    appWindow.title = appTitle;
   });
 
 }
 
-void app() {
+var outputText = TextEditingController();
+var inputText = TextEditingController();
+var portController = Get.put(PortController());
 
-  QMaterialApp app = QMaterialApp(title: "Serial terminal", darkMode: true);
+class SerialTerminal extends StatelessWidget {
 
-  QColumn mainColumn = QColumn();
+  const SerialTerminal({Key? key}) : super(key: key);
 
-  WindowButtonColors windowButtonColors = WindowButtonColors(
-    normal: const Color(0xFF333333),
-    mouseOver: const Color(0xFF505050),
-    mouseDown: const Color(0xFF505050),
-    iconNormal: const Color(0xFFCCCCCC),
-    iconMouseDown: const Color(0xFFCCCCCC),
-    iconMouseOver: const Color(0xFFCCCCCC),
-  );
-  QWidgetCompat win = QWidgetCompat(
-    WindowTitleBarBox(
-      child: Container(
-        color: const Color(0xFF333333),
-        child: Row(
-          children: [
-            Expanded(child: MoveWindow()),
-            MinimizeWindowButton(colors: windowButtonColors),
-            MaximizeWindowButton(colors: windowButtonColors),
-            CloseWindowButton(colors: windowButtonColors)
-          ],
-        )
-      )
-    )
-  );
-  mainColumn.add(win);
-
-  QRow mainRow = QRow(
-    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-    color: const Color(0xFF333333),
-    spacing: 12
-  );
-
-  QTextField outputText = QTextField(hintText: "Poruka");
-
-  QButton clearButton = QButton(text: "Očisti", type: QButtonType.Elevated);
-
-  QComboBox<int> baudRateCombo = QComboBox();
-  baudRateCombo.setItems([9600, 115200, 256000, 1000000], 1);
-
-  QButton portButton = QButton(text: "Odabir", type: QButtonType.Text);
-  portButton.onPressed(() {
-    showPortsDialog(app.context, portButton);
-  });
-
-  QSwitch portOpenSwitch = QSwitch();
-  portOpenSwitch.onChange((bool oldValue, bool newValue) {
-
-    if(SerialPort.isOpen) {
-      SerialPort.close();
-      return false;
-    }else{
-      if(serialPortName == null) return false;
-      int baudRate = baudRateCombo.value();
-      bool ok = SerialPort.open(portName: serialPortName!, baudRate: baudRate);
-      return ok;
-    }
-
-  });
-
-  mainRow.addAll([QContainer(expanded: true, content: outputText), clearButton, baudRateCombo, portButton, portOpenSwitch]);
-  mainColumn.add(mainRow);
-
-  QTextArea inputText = QTextArea(inputBorder: InputBorder.none, readOnly: true);
-  
-  SerialPort.onData((String data) {
-    inputText.appendText(data);
-  });
-
-  SerialPort.onPortClose(() { 
-    portOpenSwitch.setValue(false);
-  });
-  
-  mainColumn.add(QContainer(
-    color: const Color(0xFF1E1E1E),
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-    expanded: true,
-    content: inputText
-  ));
-
-  clearButton.onPressed(() {
-    inputText.clear();
-  });
-
-  outputText.onEditingComplete(() {
-    if(SerialPort.isOpen) SerialPort.write("${outputText.text()}\n");
-    outputText.clear();
-  });
-
-  app.setContent(mainColumn);
-  app.show();
-
-}
-
-void refreshPorts(BuildContext context, QColumn buttons) {
-  buttons.clear();
-  SerialPort.listPorts().forEach((SerialPortInfo serialPort) {
-    QButton button = QButton(text: serialPort.description, type: QButtonType.Text);
-    button.onPressed(() {
-      Navigator.pop(context, serialPort.name);
-    });
-    buttons.add(button);
-  });
-}
-
-void showPortsDialog(BuildContext context, QButton button) {
-
-  QColumn buttons = QColumn(spacing: 4);
-  showDialog(context: context, builder: (BuildContext context) {
-    refreshPorts(context, buttons);
-    return AlertDialog(
-      title: const Text("Odaberite priključak"),
-      content: FittedBox(child: buttons.buildWidget()),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, null), child: const Text("Odustani")),
-        TextButton(onPressed: () => refreshPorts(context, buttons), child: const Text("Osvježi"))
-      ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(children: [
+        buildTitleBar(),
+        buildControls(),
+        buildTextArea(),
+      ]),
     );
-  }).then((value) {
-    if(value != null) {
-      serialPortName = value.toString();
-      button.setText(value.toString());
-    }else{
-      button.setText("Odabir");
-      serialPortName = null;
-    }
-  });
+  }
+
+  Widget buildTextArea() {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        color: ThemeColors.background,
+        child: TextField(
+          controller: inputText,
+          keyboardType: TextInputType.multiline,
+          maxLines: null,
+          readOnly: true,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildControls() {
+
+    var mainRowSpacing = const SizedBox(width: 12);
+    portController.onSerialData((data) => inputText.text += data);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      child: Row( children: [
+
+        Expanded(
+          child: TextField(
+            controller: outputText,
+            onEditingComplete: () => portController.writeData(outputText.text),
+            decoration: const InputDecoration(
+              hintText: 'Poruka',
+              isDense: true,
+            ),
+          ),
+        ),
+
+        mainRowSpacing,
+
+        ElevatedButton(onPressed: () => inputText.clear(), child: const Text('Clear')),
+
+        mainRowSpacing,
+
+        GetX<PortController>(builder: (con) {
+          return DropdownButton(
+            items: con.baudRateItems,
+            value: con.baudRate.value,
+            isDense: true,
+            onChanged: (int? newValue) {
+              if(newValue == null) return;
+              con.selectBaudRate(newValue);
+            }
+          );
+        }),
+        
+        mainRowSpacing,
+
+        TextButton(
+          onPressed: () {
+            openDialog();
+          },
+          child: GetX<PortController>(builder: (con) {
+            return Text(con.portName.value);
+          })
+        ),
+
+        mainRowSpacing,
+
+        GetX<PortController>(builder: (con) {
+          return Switch(
+            value: con.portOpen.value,
+            activeColor: Colors.green,
+            onChanged: (newValue) {
+              con.openOrClose();
+            });
+        })
+
+      ]),
+    );
+  }
+
+  void openDialog() {
+
+    portController.listComPorts();
+
+    Get.dialog(AlertDialog(
+
+      title: const Text('Select COM port'),
+      
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: portController.comPortsList
+      ),
+      /*
+      content: GetX<PortController>(builder: (con) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: con.comPortsList
+        );
+      }),
+      */
+
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+        //TextButton(onPressed: () => portController.listComPorts(), child: const Text('Refresh')),
+      ],
+
+    ), transitionDuration: const Duration(milliseconds: 100))
+
+    .then((value) {
+      if(value is String) portController.selectPortName(value);
+      else portController.selectPortName(null);
+    });
+
+  }
+
+  Widget buildTitleBar() {
+
+    WindowButtonColors windowButtonColors = WindowButtonColors(
+      normal: const Color(0xFF333333),
+      mouseOver: const Color(0xFF505050),
+      mouseDown: const Color(0xFF505050),
+      iconNormal: const Color(0xFFCCCCCC),
+      iconMouseDown: const Color(0xFFCCCCCC),
+      iconMouseOver: const Color(0xFFCCCCCC),
+    );
+
+    return WindowTitleBarBox(
+      child: Container(
+        color: ThemeColors.background2,
+        child: Row(children: [
+          Expanded(child: MoveWindow()),
+          MinimizeWindowButton(colors: windowButtonColors),
+          MaximizeWindowButton(colors: windowButtonColors),
+          CloseWindowButton(colors: windowButtonColors)
+        ]),
+      ),
+    );
+  }
 
 }

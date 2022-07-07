@@ -116,6 +116,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  get:
+    dependency: "direct main"
+    description:
+      name: get
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.6.5"
   lints:
     dependency: transitive
     description:
@@ -163,7 +170,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "7b45e172fd6cbf1c4cf08c667ce696800eedffb4"
+      resolved-ref: "99756ba478f437ee0dba083ebbc6bb8001d4b37a"
       url: "https://github.com/mjosip72/dart_serial_comm.git"
     source: git
     version: "1.0.0"
@@ -228,6 +235,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.6.1"
+  win_prefs:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: "33573b054e401b48b272c3968e605dabc30edf2b"
+      url: "https://github.com/mjosip72/win_prefs.git"
+    source: git
+    version: "1.0.0"
 sdks:
   dart: ">=2.17.3 <3.0.0"
   flutter: ">=1.22.0"
