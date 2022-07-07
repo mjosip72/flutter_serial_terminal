@@ -8,7 +8,7 @@ class PortController extends GetxController {
   final String selectPortText = 'Select COM port';
   late final List<DropdownMenuItem<int>> baudRateItems;
 
-  var comPortsList = <TextButton>[].obs;
+  var comPortsList = <SerialPortInfo>[].obs;
 
   late RxInt baudRate;
   late RxString portName;
@@ -75,16 +75,9 @@ class PortController extends GetxController {
   }
 
   void listComPorts() {
-
     comPortsList.clear();
-
     var ports = SerialPort.listPorts();
-    comPortsList.addAll(ports.map((info) {
-      return TextButton(onPressed: () {
-        Get.back(result: info.name);
-      }, child: Text(info.description));
-    }).toList());
-
+    comPortsList.addAll(ports);
   }
 
 }

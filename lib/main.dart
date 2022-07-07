@@ -152,24 +152,19 @@ class SerialTerminal extends StatelessWidget {
 
       title: const Text('Select COM port'),
       
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: portController.comPortsList
-      ),
-      /*
       content: GetX<PortController>(builder: (con) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: con.comPortsList
+          children: con.comPortsList.map((info) {
+            return TextButton(onPressed: () => Get.back(result: info.name), child: Text(info.description));
+          }).toList()
         );
       }),
-      */
-
+      
       actions: [
         TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-        //TextButton(onPressed: () => portController.listComPorts(), child: const Text('Refresh')),
+        TextButton(onPressed: () => portController.listComPorts(), child: const Text('Refresh')),
       ],
 
     ), transitionDuration: const Duration(milliseconds: 100))
